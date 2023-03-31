@@ -1,11 +1,13 @@
 {
   "name": "Facilitator",
-  "id": "widget-id-juhOcvV5zC",
+  "id": "1222946177419477894",
   "api": "1.0.0",
   "editorType": ["figma","figjam"],
-  "permissions": [],
   "containsWidget": true,
   "main": "dist/code.js",
   "ui": "dist/index.html",
+  "permissions": [
+    "currentuser", "activeusers"
+  ],
   "widgetApi": "1.0.0"
 }

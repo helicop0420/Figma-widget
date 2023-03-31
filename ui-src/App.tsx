@@ -14,6 +14,7 @@ var avatarColorList = [
 const App = () => {
   const [contributors, setContributors] = useState<any>([]);
   const [reviews, setReviews] = useState<any>([]);
+  const [clickedItem, setClickedItem] = useState<any>(null);
 
   const onChecked = (e: React.ChangeEvent<HTMLInputElement>, item: any) => {
     if(e.target.checked) {
@@ -23,6 +24,10 @@ const App = () => {
       setContributors([...contributors, item])
       setReviews(reviews.filter((review: any) => review != item))
     }
+  }
+
+  const handleClickName = (name:any) => {
+    parent.postMessage({pluginMessage: {type: 'moveViewPort', name}}, '*');
   }
 
   const onReset = () => {
@@ -71,7 +76,8 @@ const App = () => {
           avatarColor: color,
           sticky: 1, 
           name: sticky.name,
-          stickyColor: sticky.stickyColor
+          stickyColor: sticky.stickyColor,
+          opacity: 0
         }
         console.log('newuser', newUser)
         finalContributors = [...finalContributors, newUser]
@@ -145,8 +151,19 @@ const App = () => {
         {contributors.length > 0 && (
           <>
             <h1 className="headingTitle">{contributors.length} Contributor</h1>
-            {contributors.map((contributor: { id: any; avatarColor: any; name: any; stickyColor: any; sticky: any; }) => (
-              <Box key={contributor.id} sx={{display: 'flex', justifyContent:'space-between', alignItems: 'center', marginBottom: '10px'}}>
+            {contributors.map((contributor: {
+              opacity: number; id: any; avatarColor: any; name: any; stickyColor: any; sticky: any; 
+              }) => (
+              <Box 
+                key={contributor.id} 
+                className={contributor.opacity == 0 ? "hoverAnim padding-wrap opacity-0": "hoverAnim padding-wrap opacity-1"}
+                sx={{
+                  display: 'flex', 
+                  justifyContent:'space-between', 
+                  alignItems: 'center', 
+                  marginBottom: '10px'}}
+                onClick={() => handleClickName(contributor.name)}
+              >
                 <Box sx={{display: 'flex', alignItems: 'center'}}>
                   <Checkbox
                     icon={<RadioButtonUnchecked />}
@@ -158,12 +175,11 @@ const App = () => {
                     defaultChecked={false}
                     sx={{marginLeft: '-9px'}}
                   />
-                  <div className="userAvatar" style={{backgroundColor: `${contributor.avatarColor}`}} >
-                    {contributor.name[0].toUpperCase()}  
+                  <div className="userAvatar" style={{backgroundColor: `${contributor.stickyColor}`}} >
                   </div>
-                  <p  className="userName">{contributor.name}</p>
+                  <p  className="userName" ><b>{contributor.name}</b></p>
                 </Box>
-                <div className="stickyCounter" style={{backgroundColor: `${contributor.stickyColor}`}}>
+                <div className="stickyCounter">
                   {contributor.sticky}
                 </div>
               </Box>
@@ -179,7 +195,7 @@ const App = () => {
                 Reviewed
             </h1>
             {reviews.map((review: { id: any; avatarColor: any; name: any; stickyColor: any; sticky: any; }) => (
-              <Box key={review.id} sx={{display: 'flex', justifyContent:'space-between', alignItems: 'center', marginBottom: '10px'}}>
+              <Box className="hoverAnim padding-wrap" key={review.id} sx={{display: 'flex', justifyContent:'space-between', alignItems: 'center', marginBottom: '10px'}}>
                 <Box sx={{display: 'flex', alignItems: 'center'}}>
                   <Checkbox
                     icon={<RadioButtonUnchecked />}
@@ -191,12 +207,11 @@ const App = () => {
                     onChange={(e) => onChecked(e, review)}
                     sx={{marginLeft: '-9px'}}
                   />
-                  <div className="userAvatar" style={{backgroundColor: `${review.avatarColor}`}} >
-                    {review.name[0].toUpperCase()}
+                  <div className="userAvatar" style={{backgroundColor: `${review.stickyColor}`}} >
                   </div>
                   <p  className="userName">{review.name}</p>
                 </Box>
-                <div className="stickyCounter" style={{backgroundColor: `${review.stickyColor}`}}>
+                <div className="stickyCounter">
                   {review.sticky}
                 </div>
               </Box>
@@ -211,8 +226,6 @@ const App = () => {
         alignItems: 'center', 
         height: '64px', 
         borderTop: '1px solid rgba(0, 0, 0, 0.3)', 
-        marginLeft: '-20px', 
-        marginRight: '-20px',
         padding: '0 20px 0 20px'}}>
         <Button className="footBtn" onClick={onReset}>Reset Contributors</Button>
         <Button className="footBtn" onClick={onClear}>Clear</Button>

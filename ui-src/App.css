@@ -1,10 +1,14 @@
 .wrap {
   display: flex;
   flex-direction: column;
-  padding-left: 20px;
-  padding-right: 20px;
+  /* padding-left: 20px;
+  padding-right: 20px; */
   height: 100%;
   position: relative;
+}
+
+.padding-wrap {
+  padding: 9px 20px 7px 20px;
 }
 
 .emptyText {
@@ -34,6 +38,7 @@
   font-weight: 700;
   font-size: 16px;
   line-height: 19px;
+  padding-left: 20px;
   display: flex;
   align-items: center;
 }
@@ -41,10 +46,11 @@
 .stickyCounter {
   width: 40px;
   height: 40px;
+  background-color: rgba(0, 0, 0, 0.15);
   display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: 50%;
+  border-radius: 4px;
   font-style: normal;
   font-weight: 400;
   font-size: 16px;
@@ -52,19 +58,14 @@
 }
 
 .userAvatar {
-  width: 48px;
+  width: 8px;
   height: 48px;
   display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: 50%;
-  margin-right: 10px;
-  margin-left: 5px;
-  color: white;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 16px;
-  line-height: 19px;
+  margin-right: 24px;
+  margin-left: 8px;
+  border-radius: 2px;
 }
 
 .userName {
@@ -72,6 +73,11 @@
   font-weight: 400;
   font-size: 16px;
   line-height: 19px;
+}
+
+.hoverAnim:hover {
+  background-color: #F5F5F5;
+  transition: 0.2s all;
 }
 
 .footBtn {
