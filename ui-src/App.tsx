@@ -17,6 +17,7 @@ const App = () => {
   const [clickedItem, setClickedItem] = useState<any>(null);
 
   const onChecked = (e: React.ChangeEvent<HTMLInputElement>, item: any) => {
+    console.log('checked')
     if(e.target.checked) {
       setReviews([...reviews, item])
       setContributors(contributors.filter((contributor: any) => contributor != item))
@@ -27,6 +28,7 @@ const App = () => {
   }
 
   const handleClickName = (name:any) => {
+    console.log('click name')
     parent.postMessage({pluginMessage: {type: 'moveViewPort', name}}, '*');
   }
 
@@ -136,101 +138,103 @@ const App = () => {
   }, [handleFigmaMsg])
 
   return (
-    <section className="wrap">
-      {contributors.length === 0 && reviews.length === 0 && (
-        <p className="emptyText">No contributors</p>
-      )}
-      <Box style={{flexGrow: 1}}>
-        {contributors.length === 0 && reviews.length > 0 && (
-          <Box sx={{display: 'flex', alignItems:'center', flexDirection: 'column', paddingBottom: '32px'}}>
-            <p className="contributed">Everyone has contributed.</p>
-            <Button className="resetBtn" variant="outlined" onClick={onReset}>Reset contributors</Button>
-          </Box>
-        )}
+    <></>
+    // <section className="wrap">
+    //   {contributors.length === 0 && reviews.length === 0 && (
+    //     <p className="emptyText">No contributors</p>
+    //   )}
+    //   <Box style={{flexGrow: 1}}>
+    //     {contributors.length === 0 && reviews.length > 0 && (
+    //       <Box sx={{display: 'flex', alignItems:'center', flexDirection: 'column', paddingBottom: '32px'}}>
+    //         <p className="contributed">Everyone has contributed.</p>
+    //         <Button className="resetBtn" variant="outlined" onClick={onReset}>Reset contributors</Button>
+    //       </Box>
+    //     )}
 
-        {contributors.length > 0 && (
-          <>
-            <h1 className="headingTitle">{contributors.length} Contributor</h1>
-            {contributors.map((contributor: {
-              opacity: number; id: any; avatarColor: any; name: any; stickyColor: any; sticky: any; 
-              }) => (
-              <Box 
-                key={contributor.id} 
-                className={contributor.opacity == 0 ? "hoverAnim padding-wrap opacity-0": "hoverAnim padding-wrap opacity-1"}
-                sx={{
-                  display: 'flex', 
-                  justifyContent:'space-between', 
-                  alignItems: 'center', 
-                  marginBottom: '10px'}}
-                onClick={() => handleClickName(contributor.name)}
-              >
-                <Box sx={{display: 'flex', alignItems: 'center'}}>
-                  <Checkbox
-                    icon={<RadioButtonUnchecked />}
-                    checkedIcon={<CheckCircle />}
-                    color="default"
-                    size="medium"
-                    onChange={(e) => onChecked(e, contributor)}
-                    value={false}
-                    defaultChecked={false}
-                    sx={{marginLeft: '-9px'}}
-                  />
-                  <div className="userAvatar" style={{backgroundColor: `${contributor.stickyColor}`}} >
-                  </div>
-                  <p  className="userName" ><b>{contributor.name}</b></p>
-                </Box>
-                <div className="stickyCounter">
-                  {contributor.sticky}
-                </div>
-              </Box>
-            ))}
-          </>
-        )}
+    //     {contributors.length > 0 && (
+    //       <>
+    //         <h1 className="headingTitle">{contributors.length} Contributor</h1>
+    //         {contributors.map((contributor: {
+    //           opacity: number; id: any; avatarColor: any; name: any; stickyColor: any; sticky: any; 
+    //           }) => (
+    //           <Box 
+    //             key={contributor.id} 
+    //             className={contributor.opacity == 0 ? "hoverAnim padding-wrap opacity-0": "hoverAnim padding-wrap opacity-1"}
+    //             sx={{
+    //               display: 'flex', 
+    //               justifyContent:'space-between', 
+    //               alignItems: 'center', 
+    //               marginBottom: '10px'}}
+    //             onClick={() => handleClickName(contributor.name)}
+    //           >
+    //             <Box sx={{display: 'flex', alignItems: 'center'}}>
+    //               <Checkbox
+    //                 icon={<RadioButtonUnchecked />}
+    //                 checkedIcon={<CheckCircle />}
+    //                 color="default"
+    //                 size="medium"
+    //                 onChange={(e) => onChecked(e, contributor)}
+    //                 onClick={(e) => e.stopPropagation()}
+    //                 value={false}
+    //                 defaultChecked={false}
+    //                 sx={{marginLeft: '-9px'}}
+    //               />
+    //               <div className="userAvatar" style={{backgroundColor: `${contributor.stickyColor}`}} >
+    //               </div>
+    //               <p  className="userName" ><b>{contributor.name}</b></p>
+    //             </Box>
+    //             <div className="stickyCounter">
+    //               {contributor.sticky}
+    //             </div>
+    //           </Box>
+    //         ))}
+    //       </>
+    //     )}
 
-        {reviews.length > 0 && (
-          <>
-            <h1 className="headingTitle"
-              style={{marginTop:'10px', 
-              paddingTop:'8px'}}>
-                Reviewed
-            </h1>
-            {reviews.map((review: { id: any; avatarColor: any; name: any; stickyColor: any; sticky: any; }) => (
-              <Box className="hoverAnim padding-wrap" key={review.id} sx={{display: 'flex', justifyContent:'space-between', alignItems: 'center', marginBottom: '10px'}}>
-                <Box sx={{display: 'flex', alignItems: 'center'}}>
-                  <Checkbox
-                    icon={<RadioButtonUnchecked />}
-                    checkedIcon={<CheckCircle />}
-                    color="default"
-                    size="medium"
-                    defaultChecked
-                    value={true}
-                    onChange={(e) => onChecked(e, review)}
-                    sx={{marginLeft: '-9px'}}
-                  />
-                  <div className="userAvatar" style={{backgroundColor: `${review.stickyColor}`}} >
-                  </div>
-                  <p  className="userName">{review.name}</p>
-                </Box>
-                <div className="stickyCounter">
-                  {review.sticky}
-                </div>
-              </Box>
-            ))}
-          </>
-        )}
+    //     {reviews.length > 0 && (
+    //       <>
+    //         <h1 className="headingTitle"
+    //           style={{marginTop:'10px', 
+    //           paddingTop:'8px'}}>
+    //             Reviewed
+    //         </h1>
+    //         {reviews.map((review: { id: any; avatarColor: any; name: any; stickyColor: any; sticky: any; }) => (
+    //           <Box className="hoverAnim padding-wrap" key={review.id} sx={{display: 'flex', justifyContent:'space-between', alignItems: 'center', marginBottom: '10px'}}>
+    //             <Box sx={{display: 'flex', alignItems: 'center'}}>
+    //               <Checkbox
+    //                 icon={<RadioButtonUnchecked />}
+    //                 checkedIcon={<CheckCircle />}
+    //                 color="default"
+    //                 size="medium"
+    //                 defaultChecked
+    //                 value={true}
+    //                 onChange={(e) => onChecked(e, review)}
+    //                 sx={{marginLeft: '-9px'}}
+    //               />
+    //               <div className="userAvatar" style={{backgroundColor: `${review.stickyColor}`}} >
+    //               </div>
+    //               <p  className="userName">{review.name}</p>
+    //             </Box>
+    //             <div className="stickyCounter">
+    //               {review.sticky}
+    //             </div>
+    //           </Box>
+    //         ))}
+    //       </>
+    //     )}
         
         
 
-      </Box>
-      <Box sx={{display: 'flex', 
-        alignItems: 'center', 
-        height: '64px', 
-        borderTop: '1px solid rgba(0, 0, 0, 0.3)', 
-        padding: '0 20px 0 20px'}}>
-        <Button className="footBtn" onClick={onReset}>Reset Contributors</Button>
-        <Button className="footBtn" onClick={onClear}>Clear</Button>
-      </Box>
-    </section>
+    //   </Box>
+    //   <Box sx={{display: 'flex', 
+    //     alignItems: 'center', 
+    //     height: '64px', 
+    //     borderTop: '1px solid rgba(0, 0, 0, 0.3)', 
+    //     padding: '0 20px 0 20px'}}>
+    //     <Button className="footBtn" onClick={onReset}>Reset Contributors</Button>
+    //     <Button className="footBtn" onClick={onClear}>Clear</Button>
+    //   </Box>
+    // </section>
   );
 };
 

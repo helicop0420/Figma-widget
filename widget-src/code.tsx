@@ -1,105 +1,384 @@
 const { widget } = figma;
-const { AutoLayout, Ellipse, Frame, Image, Rectangle, SVG, Text } = widget;
+const { AutoLayout, Ellipse, Frame, Image, Rectangle, SVG, Text, useSyncedState, useEffect, waitForTask, useSyncedMap } = widget;
 const pluginFrameSize = {
-  width: 512,
-  height: 500,
+  width: 50,
+  height: 50,
 };
-console.clear();
-var usedNode: any[] = []
-var removedNode: any[] = []
-var previousStickies: any[] = []
-var username: any[] = []
 
-const checkSticky = () => {
-  const curStickies = figma.currentPage.findChildren((node:any) => node.type === "STICKY" && removedNode[node.id] != 1 && node['authorVisible'])
-  const stickies = figma.currentPage.findChildren((node:any) => node.type === "STICKY" && usedNode[node.id] != 1 && removedNode[node.id] != 1 && node['authorVisible']);
-  var stickyList: { name: any; stickyColor?: string; }[] = [];
-  if(previousStickies.length > curStickies.length) {
-    console.log('pre', previousStickies)
-    previousStickies.forEach((sticky) => {
-      if(curStickies.filter(item => item.id == sticky.id)?.length > 0) {
-       
-      } else {
-        console.log('erasedsti', sticky)
-        let newSticky = {
-          name: username[sticky.id],
-        }
-        stickyList.push(newSticky)
-      }
-    })
-    if(stickyList.length > 0) {
-      figma.ui.postMessage({
-          type: 'remove-sticky',
-          stickyList
-      });
-    }
-  } else {
-    console.log(stickies)
-    stickies.forEach((sticky:any) => {
-      usedNode[sticky.id] = 1
-      username[sticky.id] = sticky['authorName']
-      let fill = sticky['fills'][0];
-      let newSticky = {
-        name: sticky['authorName'],
-        stickyColor: `#${Math.floor(fill.color.r * 255).toString(16).padStart(2, '0')}${Math.floor(fill.color.g * 255).toString(16).padStart(2, '0')}${Math.floor(fill.color.b * 255).toString(16).padStart(2, '0')}`,
-      }
-      if(sticky['authorName'] != " ") stickyList.push(newSticky)
-    })
-    if(stickyList.length > 0) {
-      figma.ui.postMessage({
-          type: 'get-sticky',
-          stickyList
-      });
-    }
-  }
-  
-  previousStickies = [...curStickies]
-}
+console.clear();
+// var usedNode: any[] = []
+// var removedNode: any[] = []
+var previousStickies: any[] = []
+// var username: any[] = []
+var avatarColorList = [
+  '#14AE5C', '#FFA629', '#F24822', '#9747FF', '#667799', '#FF24BD'
+]
+
+
+
+const iconChecked = `
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="12" cy="12" r="11.5" fill="black" stroke="black"/>
+<line x1="6.35355" y1="13.6464" x2="9.35355" y2="16.6464" stroke="white"/>
+<line x1="6.35355" y1="13.6464" x2="9.35355" y2="16.6464" stroke="white"/>
+<line x1="18.3536" y1="8.35355" x2="9.35355" y2="17.3536" stroke="white"/>
+<line x1="18.3536" y1="8.35355" x2="9.35355" y2="17.3536" stroke="white"/>
+</svg>
+`
 
 function Widget() {
+  // const [usedNode, setUsedNode] = useSyncedState<any>('usedNode', [])
+  const usedNode = useSyncedMap<any>("usedNode")
+  // const [removedNode, setRemovedNode] = useSyncedState<any>('removedNode', [])
+  const removedNode = useSyncedMap<any>("removedNode")
+  // const [previousStickies, setPreviousStickies] = useSyncedState<any>('previousStickies', [])
+  // const [username, setUsername] = useSyncedState<any>('username', [])
+  const username = useSyncedMap<any>("username")
+  const collaborators = useSyncedMap<any>("collaborators")
+  // const [contributors, setContributors] = useSyncedState<any>('contributors', [])
+  // const [reviews, setReviews] = useSyncedState<any>('reviews', []);
+  const [clickedItem, setClickedItem] = useSyncedState<any>('clickedItem', null);
+  const [isFirst, setFirst] = useSyncedState<any>('isFirst', true)
+
+  const checkSticky = () => {
+    var curStickies = figma.currentPage.findChildren((node:any) => node.type === "STICKY" && removedNode.get(node.id) != 1 && node['authorVisible'])
+    const curSections = figma.currentPage.findChildren((node:any) => node.type === "SECTION")
+    curSections.forEach((section:any) => {
+      let sticky = section.findChildren((node:any) => node.type === "STICKY" && removedNode.get(node.id) != 1 && node['authorVisible'])
+      if(sticky?.length > 0) curStickies.push(...sticky)
+    })
+  
+    var stickies = figma.currentPage.findChildren((node:any) => node.type === "STICKY" && usedNode.get(node.id) != 1 && removedNode.get(node.id) != 1 && node['authorVisible']);
+    const sections = figma.currentPage.findChildren((node:any) => node.type === "SECTION")
+    sections.forEach((section:any) => {
+      let sticky = section.findChildren((node:any) => node.type === "STICKY" && usedNode.get(node.id) != 1 && removedNode.get(node.id) != 1 && node['authorVisible'])
+      if(sticky?.length) stickies.push(...sticky)
+    })
+  
+    console.log('mytest', curStickies)
+    
+    var stickyList: { name: any; stickyColor?: string; }[] = [];
+    if(previousStickies.length > curStickies.length) {
+      
+      previousStickies.forEach((sticky:any) => {
+        if(curStickies.filter(item => item.id == sticky.id)?.length > 0) {
+         
+        } else {
+          console.log('erasedsti', sticky)
+          let newSticky = {
+            name: username.get(sticky.id),
+          }
+          stickyList.push(newSticky)
+        }
+      })
+      if(stickyList.length > 0) {
+        removeSticky(stickyList)
+      }
+    } else {
+      stickies.forEach((sticky:any) => {
+        // usedNode[sticky.id] = 1
+        usedNode.set(sticky.id, 1)
+        // username[sticky.id] = sticky['authorName']
+        username.set(sticky.id, sticky['authorName'])
+        let fill = sticky['fills'][0];
+        let newSticky = {
+          name: sticky['authorName'],
+          stickyColor: `#${Math.floor(fill.color.r * 255).toString(16).padStart(2, '0')}${Math.floor(fill.color.g * 255).toString(16).padStart(2, '0')}${Math.floor(fill.color.b * 255).toString(16).padStart(2, '0')}`,
+        }
+        if(sticky['authorName'] != " ") stickyList.push(newSticky)
+      })
+      if(stickyList.length > 0) {
+        handleSticky(stickyList);
+      }
+    }
+    console.log('pre', previousStickies)
+    console.log('cur', curStickies)
+    previousStickies = [...curStickies]
+    // setPreviousStickies([...curStickies])
+
+  }
+  
+
+  const clearSticky = () => {
+    previousStickies = []
+    // setPreviousStickies([])
+    const curStickies = figma.currentPage.findChildren((node:any) => node.type === "STICKY" && removedNode.get(node.id) != 1)
+    curStickies.forEach((item:any) => {
+      // removedNode[item.id] = 1
+      removedNode.set(item.id, 1)
+    })
+    const curSections = figma.currentPage.findChildren((node:any) => node.type === "SECTION")
+    curSections.forEach((section:any) => {
+      let sticky = section.findChildren((node:any) => node.type === "STICKY" && removedNode.get(node.id) != 1 && node['authorVisible'])
+      sticky.forEach((item:any) => {
+        // removedNode[item.id] = 1
+        removedNode.set(item.id, 1)
+      })
+    })
+  }
+
+  const moveViewPort = (name: any) => {
+    figma.viewport.scrollAndZoomIntoView(figma.currentPage.findChildren((node:any) => username.get(node.id) == name && node.type === "STICKY" && node['authorVisible'])) 
+  }
+
+  const onChecked = (e: any, item: any) => {
+    console.log('checked', collaborators.get('contributors'), item)
+    if(e) {
+      collaborators.set('reviews', [...collaborators.get('reviews'), item])
+      collaborators.set('contributors', collaborators.get('contributors')?.filter((contributor: any) => contributor.id != item.id))
+      // setReviews([...reviews, item])
+      // setContributors(contributors.filter((contributor: any) => contributor != item))
+    } else {
+      collaborators.set('contributors', [...collaborators.get('contributors'), item])
+      collaborators.set('reviews', collaborators.get('reviews')?.filter((review: any) => review.id != item.id))
+      // setContributors([...contributors, item])
+      // setReviews(reviews.filter((review: any) => review != item))
+    }
+  }
+
+  const handleClickName = (name:any) => {
+    // console.log('click name')
+    moveViewPort(name)
+  }
+
+  const onReset = () => {
+    collaborators.set('contributors', [...collaborators.get('contributors'), ...collaborators.get('reviews')])
+    collaborators.set('reviews', [])
+    // setContributors([...contributors, ...reviews])
+    // setReviews([])
+  }
+
+  const onClear = () => {
+    clearSticky()
+    collaborators.set('contributors', [])
+    collaborators.set('reviews', [])
+    // setContributors([])
+    // setReviews([])
+  }
+
+  const handleSticky = (stickyList: any) => {
+    // var finalContributors = [...contributors]
+    // var finalReviews = [...reviews]
+    var finalContributors = collaborators.get('contributors') || []
+    var finalReviews = collaborators.get('reviews') || []
+    stickyList.forEach((sticky: { name: any; stickyColor: any; }) => {
+      let isContributor = false
+      let isReviewer = false
+
+      console.log('finalcon', finalContributors)
+      console.log('newsticky', sticky)
+      
+      let newContributors = finalContributors.map((contributor: any) => {
+        if(contributor.name == sticky.name) {
+          isContributor = true;
+          contributor.sticky += 1
+        }
+        return contributor
+      })
+      console.log('isContributor', isContributor)
+      let newReviewer = finalReviews.map((review: any) => {
+        if(review.name == sticky.name) {
+          isReviewer = true;
+          review.sticky += 1;
+          return review
+        }
+      })
+      if(isContributor) {
+        finalContributors = [...newContributors]
+      } else if(isReviewer) {
+        finalContributors = [...finalContributors, newReviewer[0]]
+        finalReviews = finalReviews.filter((review: any) => review != newReviewer[0])
+      } else {
+        let userId = new Date().getTime();
+        console.log('why', figma.activeUsers.filter(user=> user.name == sticky.name)[0])
+        let color = figma.activeUsers.filter(user=> user.name == sticky.name)[0].photoUrl
+        // avatarColorList.push(String(color));
+        let newUser = {
+          id: userId+sticky.name,
+          avatarColor: color,
+          sticky: 1, 
+          name: sticky.name,
+          stickyColor: sticky.stickyColor,
+          opacity: 0
+        }
+        finalContributors = [...finalContributors, newUser]
+      }
+    });
+    collaborators.set('contributors', finalContributors)
+    collaborators.set('reviews', finalReviews)
+    // setContributors(finalContributors)
+    // setReviews(finalReviews)
+  }
+
+  const removeSticky = (stickyList: any) => {
+    // var finalContributors = [...contributors]
+    // var finalReviews = [...reviews]
+    var finalContributors = collaborators.get('contributors') || []
+    var finalReviews = collaborators.get('reviews') || []
+    console.log('removesticky', stickyList)
+    stickyList.forEach((sticky: { name: any; }) => {
+      finalContributors = finalContributors.map((contributor: any) => {
+        if(contributor.name == sticky.name) {
+          contributor.sticky -= 1
+        }
+        return contributor.sticky > 0 ? contributor : null
+      }).filter((el: any) => el)
+      finalReviews = finalReviews.map((review: any) => {
+        if(review.name == sticky.name) {
+          review.sticky -= 1;
+        }
+        if(review.sticky > 0) return review
+      })
+    });
+    collaborators.set('contributors', finalContributors)
+    collaborators.set('reviews', finalReviews)
+    // setContributors(finalContributors)
+    // setReviews(finalReviews)
+  }
+
+  useEffect(() => {
+    if(isFirst) {
+      checkSticky()
+      setFirst(false)
+      // // new Promise((resolve) => {
+      // //   // checkSticky()
+      // //   setFirst(false)
+      // // })
+      // new Promise((resolve) => {
+      //   setFirst(false)
+      //   setInterval(()=> {
+      //     checkSticky()
+      //   }, 2000)
+      //   figma.showUI(__html__, pluginFrameSize);
+      // })
+    }
+  })
+
   return (
     <AutoLayout
-      direction="horizontal"
-      horizontalAlignItems="center"
+      direction="vertical"
+      horizontalAlignItems="start"
       verticalAlignItems="center"
       height="hug-contents"
       padding={8}
       fill="#FFFFFF"
       cornerRadius={8}
       spacing={12}
-      onClick={async () => {
-        await new Promise((resolve) => {
-          figma.showUI(__html__, pluginFrameSize);
-          figma.ui.onmessage = async (msg) => {
-            if (msg.type === "appInit") {
-              console.log('curuser', figma.currentUser)
-              console.log('activeuser', figma.activeUsers)
-              setInterval(checkSticky, 500)
-            } else if(msg.type == "clearSticky") {
-              previousStickies = []
-              const curStickies = figma.currentPage.findChildren((node:any) => node.type === "STICKY" && removedNode[node.id] != 1)
-              curStickies.forEach((item:any) => {
-                removedNode[item.id] = 1
-              })
-            } else if(msg.type == "moveViewPort") {
-              console.log('moveviewport')
-        
-              console.log('hehe',figma.currentPage.findChildren((node:any) => username[node.id] == msg.name && node.type === "STICKY"  && node['authorVisible']))
-              figma.viewport.scrollAndZoomIntoView(figma.currentPage.findChildren((node:any) => username[node.id] == msg.name && node.type === "STICKY" && node['authorVisible'])) 
-           
-            }
-          };
-        });
+      effect={{
+        type: 'drop-shadow',
+        color: { r: 0, g: 0, b: 0, a: 0.2 },
+        offset: { x: 0, y: 0 },
+        blur: 2,
+        spread: 2,
       }}
+      
     >
-      <Image
-        // Pass a data uri directly as the image
-        src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA7YAAAO2CAYAAADc+guYAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAABxISURBVHgB7d09rFb3fcDxP/YFA7agtFKkkDoD3gqZyJRrL5UtxZEquYvjLvFmpmQqaYeMncLUdILNmZLUUixFKpWczcZTPAWymSGoZGrwJQWueTG951ZV1Tb289zLy3O+9ucjoecR49XV0fne3+/8z547b437AwAAAKKeGAAAABAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBtbQAwe9c394xf/9vaOP+bp8b7l/eNjVt7xpVrTw6AihNH745nj9wb3zh2e3zr+Mdb3z8ZAA/LnjtvjfsDgFmagvbsuwfH2fcObn8H+LxY3wrcb399c7x2cnMAPChhCzBTZ987MM6884ygBT7XTnz57njz9Y9McIEHImwBZubKtSfGd392aHvlGOCL4PCB++P0izfGG8/fHAC74RlbgBmZovaVs0c8Pwt8oUznBvzgF89sf55+6cYA2CmnIgPMhKgFvujO/PLpce69gwNgp4QtwExM68eiFviimya3Fz7cOwB2QtgCzMB0UJRnagH+y/f++dDYcHAesAPCFmDFphVkq3cA/2PaXjn3rusisDxhC7Bi5y89ZQUZ4P84d+GgqS2wNGELsGJnTWsB/p/phOSf/urAAFiGsAVYofcv7zWtBfgU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AFhE2AIAMFuH938yABYRtgAAzNaJr9wdAIsIWwAAZunZI/e2JrZWkYHFhC0AALO0fuzOAFiGsAUAYJa+efzjAbAMYQsAwOxMa8jfErbAkoQtAACzc/qlGwNgWcIWAIBZOXH07njt5OYAWJawBQBgNqYV5De/szEAdkLYAgAwG1PUTnELsBPCFgCAlTu0//548/WN7TVkgJ1aGwAAsEL/vX4saoHdErYAAKzMG8/fHN9/6cb2xBZgt4QtAACP1RSxp164uX3ysedpgYdB2ALwyEw3ryeO3hkAX90K2ONH726vG68fc10AHi5hC8Aj87WtqP35qY8GAMCj5FRkAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELbDQs0fuDdiNwwfuDwCAR03YAgsJW3br+JfvDgCAR03YAgudOCpO2J3jfncAgMdA2AILfev4xwN2Y/252wMA4FETtsBC3zh2Zxza71lJdua1k5vjsN8bAOAxELbAUk69cHPATnz75K0BAPA4CFtgKW+s3zS1ZWnTtHb9uTsDAOBxELbAUqbXtvzTqxsDFpn+AHL6pRsDAOBxEbbA0l4+fnu88byVZD7b97ei1iuiAIDHSdgCO/IPf/Uf3k3Kpzr94g1//AAAHjthC+zY26eujZf/wiuA+N+mqLWCDACsgrAFdmx63vbN1zdEDNumZ2qnSb7fBwBgVfbceWs45hTYtSvXnhyvnP2T7U++eNaP3R4/evUPnqkFAFZK2AIPxflL+8ZPfnVgnP/NU4PPt2lC+zdfvzW+efzjrbD1Sh8AYPWELfBQXd/cMy5eXRsXPty3NcX1tMPnxbR+/udbU9kTR++KWQBgdoQtAAAAacYpAAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AADCgTNgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANKELQAAAGnCFgAAgDRhCwAAQJqwBQAAIE3YAgAAkCZsAQAASBO2AAAApAlbAAAA0oQtAAAAacIWAACANGELAABAmrAFAAAgTdgCAACQJmwBAABIE7YAAACkCVsAAADShC0AAABpwhYAAIA0YQsAAECasAUAACBN2AIAAJAmbAEAAEgTtgAAAKQJWwAAANL+Ez2vR1HnkulTAAAAAElFTkSuQmCC"
+      {collaborators.get('contributors')?.length === 0 && collaborators.get('reviews')?.length === 0 && (
+        <AutoLayout direction="horizontal" verticalAlignItems="center" horizontalAlignItems="center" height={450} width={512}>
+          <Text>No contributors</Text>
+        </AutoLayout>
+      )}
+      {collaborators.get('contributors')?.length === 0 && collaborators.get('reviews')?.length > 0 && (
+        <AutoLayout direction="vertical" verticalAlignItems="center" horizontalAlignItems="center" height={148} width={512}>
+          <Text>Everyone has contributed.</Text>
+          <AutoLayout padding={{top: 24}}>
+            <AutoLayout direction="horizontal" verticalAlignItems="center" horizontalAlignItems="center" height={43} width={179} cornerRadius={8} stroke="#000000" onClick={()=>onReset()}>
+              <Text>Reset Contributors</Text>
+            </AutoLayout>
+          </AutoLayout>
+        </AutoLayout>
+      )}
+      <Text 
+      fontSize={16} 
+      lineHeight={19} 
+      fontWeight={700} 
+      onClick={async ()=> {
+        await new Promise((resolve) => {
+          setInterval(checkSticky, 500)
+          figma.showUI(__html__, pluginFrameSize);
+        })
+      }}>
+        START
+      </Text>
 
-        width={100}
-        height={100}
-      />
+      {/* {contributors.length > 0 && ( */}
+      {collaborators.get('contributors')?.length > 0 && (
+        <>
+          <AutoLayout direction="horizontal" verticalAlignItems="center" height={48} padding={{right: 20, left: 20}} spacing={236}>
+            <Text fontSize={16} lineHeight={19} fontWeight={400} width={144}>{collaborators.get('contributors')?.length} Contributor</Text>
+            <Text fontSize={16} lineHeight={19} fontWeight={700} >Randomize</Text>
+          </AutoLayout>
+          {collaborators.get('contributors') && collaborators.get('contributors').map((contributor: {
+              opacity: number; id: any; avatarColor: any; name: any; stickyColor: any; sticky: any; 
+              }) => (
+            <AutoLayout key={contributor.id} direction="horizontal" verticalAlignItems="center" padding={{right: 20, left: 20, top: 8, bottom: 8}}>
+              <AutoLayout direction="horizontal" verticalAlignItems="center" padding={{right: 45}}>
+                <AutoLayout direction="horizontal" verticalAlignItems="center" padding={{right: 16}}>
+                  <Ellipse width={24} height={24} stroke="#000000" onClick={(e:any) => {onChecked(true, contributor)}}></Ellipse>
+                </AutoLayout>
+                <AutoLayout direction="horizontal" verticalAlignItems="center">
+                  <Image
+                    src={contributor.avatarColor}
+                    width={48}
+                    height={48}
+                    cornerRadius={24}
+                  />
+                </AutoLayout>
+                <AutoLayout direction="horizontal" verticalAlignItems="center" padding={{left: 16}}>
+                  <Text fontSize={16} width={282} fontWeight="bold">{contributor.name}</Text>
+                </AutoLayout>
+              </AutoLayout>
+              <AutoLayout direction="horizontal" verticalAlignItems="center" horizontalAlignItems="center" cornerRadius={4} fill={contributor.stickyColor} width={40} height={40}>
+                <Text>{contributor.sticky}</Text>
+              </AutoLayout>
+            </AutoLayout>
+          ))}
+         
+        </>
+      )}
 
+      {collaborators.get('reviews')?.length > 0 && (
+        <>
+          <AutoLayout direction="horizontal" verticalAlignItems="center" height={48} padding={{right: 20, left: 20, top: 10, bottom: 10}}>
+            <Text fontSize={16} lineHeight={19} fontWeight={400} width={144}>{collaborators.get('reviews')?.length} Reviewed</Text>
+          </AutoLayout>
+          {collaborators.get('reviews')?.map((review: { id: any; avatarColor: any; name: any; stickyColor: any; sticky: any; }) => (
+            <AutoLayout key={2} direction="horizontal" verticalAlignItems="center" padding={{right: 20, left: 20, top: 8, bottom: 8}}>
+              <AutoLayout direction="horizontal" verticalAlignItems="center" padding={{right: 45}}>
+                <AutoLayout direction="horizontal" verticalAlignItems="center" padding={{right: 16}}>
+                  <SVG
+                    src={iconChecked}
+                    width={24} 
+                    height={24}
+                    onClick={(e:any) => {
+                      onChecked(false, review)
+                    }}
+                  />
+                </AutoLayout>
+                <AutoLayout direction="horizontal" verticalAlignItems="center">
+                  <Image
+                    src={review.avatarColor}
+                    width={48}
+                    height={48}
+                    cornerRadius={24}
+                  />
+                </AutoLayout>
+                <AutoLayout direction="horizontal" verticalAlignItems="center" padding={{left: 16}}>
+                  <Text fontSize={16} width={282} fontWeight="bold">{review.name}</Text>
+                </AutoLayout>
+              </AutoLayout>
+              <AutoLayout direction="horizontal" verticalAlignItems="center" horizontalAlignItems="center" cornerRadius={4} fill={review.stickyColor} width={40} height={40}>
+                <Text>{review.sticky}</Text>
+              </AutoLayout>
+            </AutoLayout>
+          ))}
+        </>
+      )}
+      <AutoLayout direction="horizontal" verticalAlignItems="center" stroke="#00000060" height={1} width={512}></AutoLayout>
+      <AutoLayout direction="horizontal" verticalAlignItems="center" spacing={32} padding={{top: 20, bottom: 20, left: 20}}>
+        <Text fontSize={16} fontWeight="bold" onClick={()=>onReset()}>Reset</Text>
+        <Text fontSize={16} fontWeight="bold" onClick={()=>onClear()}>Clear</Text>
+      </AutoLayout>
     </AutoLayout>
   );
 }
