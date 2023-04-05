@@ -14,8 +14,6 @@ var avatarColorList = [
   '#14AE5C', '#FFA629', '#F24822', '#9747FF', '#667799', '#FF24BD'
 ]
 
-
-
 const iconChecked = `
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 <circle cx="12" cy="12" r="11.5" fill="black" stroke="black"/>
@@ -35,6 +33,7 @@ function Widget() {
   // const [username, setUsername] = useSyncedState<any>('username', [])
   const username = useSyncedMap<any>("username")
   const collaborators = useSyncedMap<any>("collaborators")
+  const status = useSyncedMap<any>("status")
   // const [contributors, setContributors] = useSyncedState<any>('contributors', [])
   // const [reviews, setReviews] = useSyncedState<any>('reviews', []);
   const [clickedItem, setClickedItem] = useSyncedState<any>('clickedItem', null);
@@ -136,16 +135,36 @@ function Widget() {
     }
   }
 
-  const handleClickName = (name:any) => {
-    // console.log('click name')
-    moveViewPort(name)
-  }
-
   const onReset = () => {
     collaborators.set('contributors', [...collaborators.get('contributors'), ...collaborators.get('reviews')])
     collaborators.set('reviews', [])
     // setContributors([...contributors, ...reviews])
     // setReviews([])
+  }
+
+  
+
+  const shuffle = (array:any) => {
+    let currentIndex = array.length,  randomIndex;
+  
+    // While there remain elements to shuffle.
+    while (currentIndex != 0) {
+  
+      // Pick a remaining element.
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex--;
+  
+      // And swap it with the current element.
+      [array[currentIndex], array[randomIndex]] = [
+        array[randomIndex], array[currentIndex]];
+    }
+  
+    return array;
+  }
+
+  const onRandomize = () => {
+    let cons = [...collaborators.get('contributors')]
+    collaborators.set('contributors', shuffle(cons))
   }
 
   const onClear = () => {
@@ -191,7 +210,12 @@ function Widget() {
       } else {
         let userId = new Date().getTime();
         console.log('why', figma.activeUsers.filter(user=> user.name == sticky.name)[0])
-        let color = figma.activeUsers.filter(user=> user.name == sticky.name)[0].photoUrl
+        let activeUser = figma.activeUsers.filter(user=> user.name == sticky.name)
+        var color:any = avatarColorList[0]
+        if(activeUser?.length > 0) {
+          color = figma.activeUsers.filter(user=> user.name == sticky.name)[0].photoUrl
+        }
+         
         // avatarColorList.push(String(color));
         let newUser = {
           id: userId+sticky.name,
@@ -273,7 +297,7 @@ function Widget() {
       }}
       
     >
-      {collaborators.get('contributors')?.length === 0 && collaborators.get('reviews')?.length === 0 && (
+      {(collaborators.get('contributors')?.length === 0 || !collaborators.get('contributors')) && (collaborators.get('reviews')?.length === 0 || !collaborators.get('reviews')) && (
         <AutoLayout direction="horizontal" verticalAlignItems="center" horizontalAlignItems="center" height={450} width={512}>
           <Text>No contributors</Text>
         </AutoLayout>
@@ -282,39 +306,105 @@ function Widget() {
         <AutoLayout direction="vertical" verticalAlignItems="center" horizontalAlignItems="center" height={148} width={512}>
           <Text>Everyone has contributed.</Text>
           <AutoLayout padding={{top: 24}}>
-            <AutoLayout direction="horizontal" verticalAlignItems="center" horizontalAlignItems="center" height={43} width={179} cornerRadius={8} stroke="#000000" onClick={()=>onReset()}>
+            <AutoLayout 
+              direction="horizontal" 
+              verticalAlignItems="center" 
+              horizontalAlignItems="center" 
+              height={43} 
+              width={179} 
+              cornerRadius={8} 
+              stroke="#000000" 
+              onClick={async()=>{
+                onReset();
+                if(status.get('active') && status.get('admin') == figma.currentUser?.id) {
+                  await new Promise((resolve) => {
+                    setInterval(checkSticky, 500)
+                    figma.showUI(__html__, pluginFrameSize);
+                  }) 
+                }
+              }}>
               <Text>Reset Contributors</Text>
             </AutoLayout>
           </AutoLayout>
         </AutoLayout>
       )}
       <Text 
-      fontSize={16} 
-      lineHeight={19} 
-      fontWeight={700} 
-      onClick={async ()=> {
-        await new Promise((resolve) => {
-          setInterval(checkSticky, 500)
-          figma.showUI(__html__, pluginFrameSize);
-        })
-      }}>
-        START
+        fontSize={16} 
+        lineHeight={19} 
+        fontWeight={700} 
+        hoverStyle={{fill: "#00FF00"}}
+        onClick={async ()=> {
+          if(status.get('admin')) {
+            if(status.get('active') && status.get('admin') == figma.currentUser?.id) {
+              status.set('active', false)
+              status.set('admin', null)
+            }
+          } else {
+            await new Promise((resolve) => {
+              setInterval(checkSticky, 500)
+              status.set('active', true)
+              status.set('admin', figma.currentUser?.id)
+              figma.showUI(__html__, pluginFrameSize);
+            })
+          }
+        }}>
+        {status.get('active')?'STOP':'START'}
       </Text>
 
       {/* {contributors.length > 0 && ( */}
       {collaborators.get('contributors')?.length > 0 && (
         <>
-          <AutoLayout direction="horizontal" verticalAlignItems="center" height={48} padding={{right: 20, left: 20}} spacing={236}>
+          <AutoLayout direction="horizontal" verticalAlignItems="center" height={48} padding={{right: 20, left: 20}} spacing={236} >
             <Text fontSize={16} lineHeight={19} fontWeight={400} width={144}>{collaborators.get('contributors')?.length} Contributor</Text>
-            <Text fontSize={16} lineHeight={19} fontWeight={700} >Randomize</Text>
+            <Text 
+              fontSize={16} 
+              lineHeight={19} 
+              fontWeight={700} 
+              onClick={async()=>{
+                onRandomize();
+                if(status.get('active') && status.get('admin') == figma.currentUser?.id) {
+                  await new Promise((resolve) => {
+                    setInterval(checkSticky, 500)
+                    figma.showUI(__html__, pluginFrameSize);
+                  }) 
+                }
+              }}>
+                Randomize
+            </Text>
           </AutoLayout>
           {collaborators.get('contributors') && collaborators.get('contributors').map((contributor: {
               opacity: number; id: any; avatarColor: any; name: any; stickyColor: any; sticky: any; 
               }) => (
-            <AutoLayout key={contributor.id} direction="horizontal" verticalAlignItems="center" padding={{right: 20, left: 20, top: 8, bottom: 8}}>
+            <AutoLayout 
+              key={contributor.id} 
+              hoverStyle={{fill: "#F5F5F5"}} 
+              direction="horizontal" 
+              verticalAlignItems="center" 
+              padding={{right: 20, left: 20, top: 8, bottom: 8}} 
+              onClick={async ()=>{
+                if(status.get('active') && status.get('admin') == figma.currentUser?.id) {
+                  await new Promise((resolve) => {
+                    setInterval(checkSticky, 500)
+                    figma.showUI(__html__, pluginFrameSize);
+                  }) 
+                }
+              }}>
               <AutoLayout direction="horizontal" verticalAlignItems="center" padding={{right: 45}}>
                 <AutoLayout direction="horizontal" verticalAlignItems="center" padding={{right: 16}}>
-                  <Ellipse width={24} height={24} stroke="#000000" onClick={(e:any) => {onChecked(true, contributor)}}></Ellipse>
+                  <Ellipse 
+                    width={24} 
+                    height={24} 
+                    stroke="#000000" 
+                    hoverStyle={{fill: "#00000010"}}
+                    onClick={async (e:any) => {
+                      onChecked(true, contributor);
+                      if(status.get('active') && status.get('admin') == figma.currentUser?.id) {
+                        await new Promise((resolve) => {
+                          setInterval(checkSticky, 500)
+                          figma.showUI(__html__, pluginFrameSize);
+                        }) 
+                      }
+                    }}></Ellipse>
                 </AutoLayout>
                 <AutoLayout direction="horizontal" verticalAlignItems="center">
                   <Image
@@ -325,7 +415,21 @@ function Widget() {
                   />
                 </AutoLayout>
                 <AutoLayout direction="horizontal" verticalAlignItems="center" padding={{left: 16}}>
-                  <Text fontSize={16} width={282} fontWeight="bold">{contributor.name}</Text>
+                  <Text 
+                  fontSize={16} 
+                  width={282} 
+                  fontWeight="bold" 
+                  onClick={async()=>{
+                    moveViewPort(contributor.name)
+                    if(status.get('active') && status.get('admin') == figma.currentUser?.id) {
+                      await new Promise((resolve) => {
+                        setInterval(checkSticky, 500)
+                        figma.showUI(__html__, pluginFrameSize);
+                      }) 
+                    }
+                  }}>
+                    {contributor.name}
+                  </Text>
                 </AutoLayout>
               </AutoLayout>
               <AutoLayout direction="horizontal" verticalAlignItems="center" horizontalAlignItems="center" cornerRadius={4} fill={contributor.stickyColor} width={40} height={40}>
@@ -350,8 +454,14 @@ function Widget() {
                     src={iconChecked}
                     width={24} 
                     height={24}
-                    onClick={(e:any) => {
-                      onChecked(false, review)
+                    onClick={async(e:any) => {
+                      onChecked(false, review);
+                      if(status.get('active') && status.get('admin') == figma.currentUser?.id) {
+                        await new Promise((resolve) => {
+                          setInterval(checkSticky, 500)
+                          figma.showUI(__html__, pluginFrameSize);
+                        }) 
+                      }
                     }}
                   />
                 </AutoLayout>
@@ -376,8 +486,34 @@ function Widget() {
       )}
       <AutoLayout direction="horizontal" verticalAlignItems="center" stroke="#00000060" height={1} width={512}></AutoLayout>
       <AutoLayout direction="horizontal" verticalAlignItems="center" spacing={32} padding={{top: 20, bottom: 20, left: 20}}>
-        <Text fontSize={16} fontWeight="bold" onClick={()=>onReset()}>Reset</Text>
-        <Text fontSize={16} fontWeight="bold" onClick={()=>onClear()}>Clear</Text>
+        <Text 
+          fontSize={16} 
+          fontWeight="bold" 
+          onClick={async()=>{
+            onReset();
+            if(status.get('active') && status.get('admin') == figma.currentUser?.id) {
+              await new Promise((resolve) => {
+                setInterval(checkSticky, 500)
+                figma.showUI(__html__, pluginFrameSize);
+              }) 
+            }
+          }}>
+          Reset
+        </Text>
+        <Text 
+          fontSize={16} 
+          fontWeight="bold" 
+          onClick={async()=>{
+            onClear();
+            if(status.get('active') && status.get('admin') == figma.currentUser?.id) {
+              await new Promise((resolve) => {
+                setInterval(checkSticky, 500)
+                figma.showUI(__html__, pluginFrameSize);
+              }) 
+            }
+          }}>
+            Clear
+        </Text>
       </AutoLayout>
     </AutoLayout>
   );
