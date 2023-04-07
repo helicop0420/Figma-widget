@@ -1,15 +1,32 @@
 .wrap {
   display: flex;
   flex-direction: column;
-  /* padding-left: 20px;
-  padding-right: 20px; */
-  height: 100%;
+  padding: 16px;
   position: relative;
+
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
 }
 
 .padding-wrap {
-  padding: 9px 20px 7px 20px;
+  padding: 9px 20px 16px 20px;
 }
+
+.alert-header {
+  background: rgba(255, 166, 41, 0.3);
+  border: 1px solid #FFA629;
+  border-radius: 4px;
+  padding: 8px 10px;
+}
+
+.blog {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
 
 .emptyText {
   position: absolute;

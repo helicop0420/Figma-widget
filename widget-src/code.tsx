@@ -1,8 +1,8 @@
 const { widget } = figma;
 const { AutoLayout, Ellipse, Frame, Image, Rectangle, SVG, Text, useSyncedState, useEffect, waitForTask, useSyncedMap } = widget;
 const pluginFrameSize = {
-  width: 50,
-  height: 50,
+  width: 328,
+  height: 263
 };
 
 console.clear();
@@ -298,7 +298,6 @@ function Widget() {
       verticalAlignItems="center"
       height="hug-contents"
       fill="#212121"
-      cornerRadius={8}
       spacing={12}
       effect={{
         type: 'drop-shadow',
@@ -377,7 +376,7 @@ function Widget() {
           {collaborators.get('contributors')?.length > 0 && (
             <>
               <AutoLayout direction="horizontal" verticalAlignItems="center" height={48} padding={{right: 20, left: 20}} spacing={236} >
-                <Text fontSize={16} lineHeight={19} fontWeight={400} width={144} fill={"#FFFFFF99"}>{collaborators.get('contributors')?.length} Contributor</Text>
+                <Text fontSize={16} lineHeight={19} fontWeight={400} width={144} fill={"#FFFFFF99"}>{collaborators.get('contributors')?.length} {collaborators.get('contributors')?.length > 1? 'Contributors': 'Contributor'}</Text>
                 <Text 
                   fontSize={16} 
                   lineHeight={19} 
@@ -552,7 +551,7 @@ function Widget() {
                   }) 
                 }
               }}>
-                Clear
+                New Session
             </Text>
           </AutoLayout>
         </>
